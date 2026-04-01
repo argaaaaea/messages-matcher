@@ -36,8 +36,9 @@ def health():
     return jsonify({"status": "ok", "timestamp": datetime.now().isoformat()}), 200
 
 if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 8080))
     print("\nWhatsApp Webhook Server Starting...")
-    print("Listening on http://localhost:9091/webhook/whatsapp")
+    print(f"Listening on http://0.0.0.0:{port}/webhook/whatsapp")
     print("Press Ctrl+C to stop\n")
     sys.stdout.flush()
-    app.run(host='0.0.0.0', port=9091, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=False)
