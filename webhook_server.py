@@ -1,44 +1,49 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from flask import Flask, request, jsonify
-import json
-from datetime import datetime
-import sys
-import os
 
-os.environ['PYTHONIOENCODING'] = 'utf-8'
+import os
+import sys
+from datetime import datetime
+
+from flask import Flask, jsonify, request
+
+os.environ["PYTHONIOENCODING"] = "utf-8"
 
 app = Flask(__name__)
 
-@app.route('/webhook/whatsapp', methods=['POST', 'GET'])
-def whatsapp_webhook():
-    """Receive WhatsApp DLR and message callbacks from Infobip"""
-    try:
-        data = request.get_json() if request.is_json else request.args.to_dict()
+TARGET_MESSAGE = "Mine"
 
+
+@app.route("/matcher", methods=["POST"])
+@app.route("/webhook", methods=["POST"])
+def receive_message():
+    payload = request.get_json(silent=True) or {}
+    message = payload.get("message")
+    destination = payload.get("destination")
+
+    if not message:
+        return jsonify({"error": "message is required"}), 400
+
+    if not destination:
+        return jsonify({"error": "destination is required"}), 400
+
+    if message == TARGET_MESSAGE:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(f"\n{'='*80}")
-        print(f"[{timestamp}] WEBHOOK RECEIVED")
-        print(f"{'='*80}")
-        print(json.dumps(data, indent=2))
-        print(f"{'='*80}\n")
+        print(f"[{timestamp}] matched payload: message={message}, destination={destination}")
         sys.stdout.flush()
+        return jsonify({"message": "is processed", "destination": destination}), 200
 
-        return jsonify({"status": "received"}), 200
-    except Exception as e:
-        print(f"Error processing webhook: {e}")
-        sys.stdout.flush()
-        return jsonify({"error": str(e)}), 400
+    return jsonify({"message": "not processed"}), 200
 
-@app.route('/health', methods=['GET'])
+
+@app.route("/health", methods=["GET"])
 def health():
-    """Health check endpoint"""
     return jsonify({"status": "ok", "timestamp": datetime.now().isoformat()}), 200
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8080))
-    print("\nWhatsApp Webhook Server Starting...")
-    print(f"Listening on http://0.0.0.0:{port}/webhook/whatsapp")
-    print("Press Ctrl+C to stop\n")
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))
+    print("Simple webhook server starting...")
+    print(f"Listening on http://0.0.0.0:{port}/matcher")
     sys.stdout.flush()
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=False)
